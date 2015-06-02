@@ -2,7 +2,7 @@
 * ng-grid JavaScript Library
 * Authors: https://github.com/angular-ui/ng-grid/blob/master/README.md 
 * License: MIT (http://www.opensource.org/licenses/mit-license.php)
-* Compiled At: 11/04/2014 09:19
+* Compiled At: 06/02/2015 14:10
 ***********************************************/
 (function(window, $) {
 'use strict';
@@ -816,11 +816,18 @@ var ngColumn = function (config, $scope, grid, domUtilityService, $templateCache
     self.noSortVisible = function() {
         return !self.sortDirection;
     };
+    var gotUserSortDirection = false;
     self.sort = function(evt) {
         if (!self.sortable) {
             return true; 
         }
-        var dir = self.sortDirection === ASC ? DESC : ASC;
+        var dir;
+        if(self.colDef.sortDirection && !gotUserSortDirection){
+            dir = self.sortDirection === ASC ? ASC : DESC;
+            gotUserSortDirection = true;
+        } else {
+            dir = self.sortDirection === ASC ? DESC : ASC;
+        }
         self.sortDirection = dir;
         config.sortCallback(self, evt);
         return false;
@@ -1796,6 +1803,7 @@ var ngGrid = function ($scope, options, sortService, domUtilityService, $filter,
             angular.forEach(self.lastSortedColumns, function (c) {
                 c.sortDirection = "";
                 c.sortPriority = null;
+                c.gotUserSortDirection = false;
             });
             self.lastSortedColumns = [];
         } else {
@@ -1803,6 +1811,7 @@ var ngGrid = function ($scope, options, sortService, domUtilityService, $filter,
                 if (col.index !== c.index) {
                     c.sortDirection = "";
                     c.sortPriority = null;
+                    c.gotUserSortDirection = false;
                 }
             });
             self.lastSortedColumns[0] = col;
@@ -2049,7 +2058,7 @@ ngRow.prototype.toggleSelected = function (event) {
 		return true;
 	}
 	var element = event.target || event;
-	if (element.type === "checkbox" && element.parentElement.className !== "ngSelectionCell ng-scope") {
+	if (element.type === "checkbox" && element.parentElement.className !== "ngSelectionCell") {
 		return true;
 	}
 	if (this.config.selectWithCheckboxOnly && element.type !== "checkbox") {
@@ -2266,7 +2275,7 @@ var ngRowFactory = function (grid, $scope, domUtilityService, $templateCache, $u
                 var col = filterCols(cols, group)[0];
 
                 var val = $utils.evalProperty(model, group);
-                val = (val === '' || val === null) ? 'null' : val.toString();
+                val = (val === '' || val === null || val === undefined) ? 'null' : val.toString();
                 if (!ptr[val]) {
                     ptr[val] = {};
                 }
@@ -2569,8 +2578,8 @@ var ngSelectionProvider = function (grid, $scope, $parse, $utils) {
                     rowsArr = grid.filteredRows;
                 }
 
-                var thisIndx = rowItem.rowIndex;
-                var prevIndx = self.lastClickedRowIndex;
+                var thisIndx = rowsArr.indexOf(rowItem.orig || rowItem);
+                var prevIndx = rowsArr.indexOf(self.lastClickedRow.orig || self.lastClickedRow);
                 if (thisIndx === prevIndx) {
                     return false;
                 }
@@ -3156,7 +3165,7 @@ ngGridDirectives.directive('ngInput', [function() {
         link: function (scope, elm, attrs, ngModel) {
             var oldCellValue;
             var dereg = scope.$watch('ngModel', function() {
-                oldCellValue = ngModel.$modelValue;
+                oldCellValue = ngModel.$viewValue;
                 dereg(); 
             });
 
@@ -3463,7 +3472,7 @@ angular.module('ngGrid').run(['$templateCache', function($templateCache) {
   $templateCache.put('aggregateTemplate.html',
     "<div ng-click=\"row.toggleExpand()\" ng-style=\"rowStyle(row)\" class=\"ngAggregate\">\r" +
     "\n" +
-    "    <span class=\"ngAggregateText\">{{row.label CUSTOM_FILTERS}} ({{row.totalChildren()}} {{AggItemsLabel}})</span>\r" +
+    "    <span class=\"ngAggregateText\">{{row.label CUSTOM_FILTERS}} ({{row.totalChildren()}}{{AggItemsLabel}})</span>\r" +
     "\n" +
     "    <div class=\"{{row.aggClass()}}\"></div>\r" +
     "\n" +

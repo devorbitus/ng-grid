@@ -32,7 +32,7 @@ ngRow.prototype.toggleSelected = function (event) {
 	}
 	var element = event.target || event;
 	//check and make sure its not the bubbling up of our checked 'click' event 
-	if (element.type === "checkbox" && element.parentElement.className !== "ngSelectionCell ng-scope") {
+	if (element.type === "checkbox" && element.parentElement.className !== "ngSelectionCell") {
 		return true;
 	}
 	if (this.config.selectWithCheckboxOnly && element.type !== "checkbox") {
